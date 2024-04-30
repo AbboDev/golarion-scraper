@@ -27,7 +27,7 @@ const {
 /**
  *
  */
-async function performScraping(url = "") {
+async function performScraping(url) {
   // downloading the target web page
   // by performing an HTTP GET request in Axios
   const axiosResponse = await axios.request({
