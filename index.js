@@ -1,4 +1,4 @@
-const axios = require("axios");
+import axios from "axios";
 
 const MAIN_DOMAIN = "https://golarion.altervista.org";
 
