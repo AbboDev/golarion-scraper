@@ -1,3 +1,4 @@
+import * as cheerio from "cheerio";
 import axios from "axios";
 import { parseArgs } from "node:util";
 
@@ -34,6 +35,42 @@ async function performScraping(url) {
     method: "GET",
     url,
   });
+
+  // parsing the HTML source of the target web page with Cheerio
+  const $ = cheerio.load(axiosResponse.data);
+
+  const mainContent = $("#main-body");
+  const outputContent = mainContent.find(".mw-parser-output");
+
+  console.debug(createPage(outputContent));
+}
+
+/**
+ * Given a container, found its first title and the thumbnail
+ *
+ * @param {cheerio.Cheerio<cheerio.Element>} context
+ */
+function createPage(context) {
+  const title = context.find("h1").text();
+  const image = createImage(context.find(".image img"));
+
+  return {
+    title,
+    image,
+  };
+}
+
+/**
+ * Given an image tag, return its attributes
+ *
+ * @param {cheerio.Cheerio<cheerio.Element>} img
+ */
+function createImage(img) {
+  return {
+    alt: img.attr("alt"),
+    src: img.attr("src"),
+    srcset: img.attr("srcset"),
+  };
 }
 
 /**
