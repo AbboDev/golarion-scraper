@@ -1,7 +1,7 @@
 import axios from "axios";
 import { parseArgs } from "node:util";
 
-const MAIN_DOMAIN = "https://golarion.altervista.org";
+const MAIN_DOMAIN = "https://golarion.altervista.org/wiki";
 
 axios.defaults.baseURL = MAIN_DOMAIN;
 axios.defaults.headers["User-Agent"] =
@@ -13,7 +13,7 @@ axios.defaults.headers["User-Agent"] =
 const options = {
   url: {
     type: "string",
-    default: "/wiki/Pagina_principale",
+    default: "/Pagina_principale",
   },
 };
 
