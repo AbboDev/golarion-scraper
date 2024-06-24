@@ -97,6 +97,17 @@ async function main() {
     mkdirSync(OUTPUT_DIR);
   }
 
+  process.on("SIGINT", async function () {
+    console.log("Download interrupted before end");
+
+    console.log(`Saving current state`);
+    await save("sitemap", sitemap);
+    await save("invalids", invalids);
+    console.log(`Current state saved!`);
+
+    process.exit(1);
+  });
+
   while (queue.length) {
     let url = queue.shift();
 
