@@ -1,7 +1,7 @@
 import * as cheerio from "cheerio";
 import axios, { isAxiosError } from "axios";
 import { parseArgs } from "node:util";
-import { existsSync, mkdirSync } from "node:fs";
+import { existsSync, mkdirSync, readFile } from "node:fs";
 import { writeFile } from "node:fs/promises";
 
 const MAIN_DOMAIN = "https://golarion.altervista.org/wiki";
@@ -62,6 +62,8 @@ function getInsideLinks(context, $) {
       return;
     }
 
+    // console.debug(url);
+
     list.push(url.href);
   });
 
@@ -80,29 +82,68 @@ async function main() {
       type: "string",
       default: "/Pagina_principale",
     },
+    backup: {
+      type: "boolean",
+      short: "b",
+      default: false,
+    },
   };
 
   /**
    * The parsed arguments
    */
   const {
-    values: { url: inputUrl },
+    values: { url: inputUrl, backup },
   } = parseArgs({ options });
-
-  let queue = [inputUrl];
-  const sitemap = [];
-  const invalids = [];
 
   if (!existsSync(OUTPUT_DIR)) {
     mkdirSync(OUTPUT_DIR);
   }
 
+  let queue = [inputUrl];
+  let sitemap = [];
+  let invalids = [];
+
+  if (backup) {
+    await Promise.all([
+      readFile(`${OUTPUT_DIR}/sitemap.json`, "utf8", (error, data) => {
+        if (error) {
+          console.log(error);
+          return;
+        }
+
+        sitemap = JSON.parse(data);
+        console.debug(JSON.parse(data));
+      }),
+      readFile(`${OUTPUT_DIR}/invalids.json`, "utf8", (error, data) => {
+        if (error) {
+          console.log(error);
+          return;
+        }
+
+        invalids = JSON.parse(data);
+        console.debug(JSON.parse(data));
+      }),
+      readFile(`${OUTPUT_DIR}/backup.json`, "utf8", (error, data) => {
+        if (error) {
+          console.log(error);
+          return;
+        }
+
+        queue = JSON.parse(data);
+        console.debug(JSON.parse(data));
+      }),
+    ]);
+  }
+
   process.on("SIGINT", async function () {
+    console.clear();
     console.log("Download interrupted before end");
 
     console.log(`Saving current state`);
     await save("sitemap", sitemap);
     await save("invalids", invalids);
+    await save("backup", queue);
     console.log(`Current state saved!`);
 
     process.exit(1);
@@ -151,6 +192,7 @@ async function main() {
   console.log(`Saving results`);
   await save("sitemap", sitemap);
   await save("invalids", invalids);
+  await save("backup", queue);
   console.log(`Results saved!`);
 }
 
