@@ -1,5 +1,5 @@
 import * as cheerio from "cheerio";
-import axios from "axios";
+import axios, { isAxiosError } from "axios";
 import { parseArgs } from "node:util";
 import { existsSync, mkdirSync } from "node:fs";
 import { writeFile } from "node:fs/promises";
@@ -131,7 +131,13 @@ async function main() {
 
         sitemap.push(url);
       } catch (error) {
-        invalids.push({ url, httpStatus: error?.httpStatus });
+        const invalidUrl = {
+          url,
+        };
+        if (isAxiosError) {
+          invalidUrl.httpStatus = error.response.status;
+        }
+        invalids.push(invalidUrl);
         console.error(error);
       }
     } else {
