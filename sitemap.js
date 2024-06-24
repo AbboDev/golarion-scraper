@@ -1,9 +1,11 @@
 import * as cheerio from "cheerio";
 import axios from "axios";
 import { parseArgs } from "node:util";
-import { existsSync, mkdirSync, writeFile } from "node:fs";
+import { existsSync, mkdirSync } from "node:fs";
+import { writeFile } from "node:fs/promises";
 
 const MAIN_DOMAIN = "https://golarion.altervista.org/wiki";
+const OUTPUT_DIR = "./output";
 
 axios.defaults.baseURL = MAIN_DOMAIN;
 axios.defaults.headers["User-Agent"] =
@@ -88,13 +90,11 @@ async function main() {
   } = parseArgs({ options });
 
   let queue = [inputUrl];
-  const history = [];
+  const sitemap = [];
   const invalids = [];
 
-  const dir = "./output";
-
-  if (!existsSync(dir)) {
-    mkdirSync(dir);
+  if (!existsSync(OUTPUT_DIR)) {
+    mkdirSync(OUTPUT_DIR);
   }
 
   while (queue.length) {
@@ -103,12 +103,12 @@ async function main() {
     console.clear();
 
     console.table([
-      ["Done", history.length],
+      ["Done", sitemap.length],
       ["Remaining", queue.length],
       ["Invalids", invalids.length],
     ]);
 
-    if (!history.includes(url)) {
+    if (!sitemap.includes(url)) {
       console.info(`Processing ${url}`);
 
       try {
@@ -118,7 +118,7 @@ async function main() {
 
         queue = [...queue, ...urls];
 
-        history.push(url);
+        sitemap.push(url);
       } catch (error) {
         invalids.push({ url, httpStatus: error?.httpStatus });
         console.error(error);
@@ -128,15 +128,25 @@ async function main() {
     }
   }
 
-  writeFile(`${dir}/sitemap.json`, JSON.stringify(history), { flag: "w+" }, (err) => {
-    if (err) throw err;
-    console.log("The file 'sitemap.json' has been saved!");
-  });
+  console.log("Download ended!");
+  console.log(`Found ${sitemap.length} URLs`);
 
-  writeFile(`${dir}/invalids.json`, JSON.stringify(invalids), { flag: "w+" }, (err) => {
-    if (err) throw err;
-    console.log("The file 'invalids.json' has been saved!");
-  });
+  console.log(`Saving results`);
+  await save("sitemap", sitemap);
+  await save("invalids", invalids);
+  console.log(`Results saved!`);
+}
+
+function save(file, data) {
+  return writeFile(
+    `${OUTPUT_DIR}/${file}.json`,
+    JSON.stringify(data),
+    { flag: "w+" },
+    (err) => {
+      if (err) throw err;
+      console.log(`The file '${file}' has been saved!`);
+    }
+  );
 }
 
 main();
